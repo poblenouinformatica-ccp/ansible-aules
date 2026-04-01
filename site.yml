@@ -1,0 +1,14 @@
+---
+- name: "Configuracion Automatica de Estaciones de Robotica"
+  hosts: localhost
+  become: true
+  tasks:
+    - name: "Ejecutando instalacion de ROS 2"
+      ansible.builtin.include_tasks: install_ros2_jazzy.yml
+
+    - name: "Ejecutando instalacion de Webots y Drivers"
+      ansible.builtin.include_tasks: install_webots.yml
+
+    - name: "Limpieza de paquetes innecesarios"
+      ansible.builtin.apt:
+        autoremove: yes
