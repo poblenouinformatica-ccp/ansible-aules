@@ -1,31 +1,31 @@
-- name: Asegurar que el directorio de keyrings existe
+- name: Limpiar repositorios antiguos de Webots
   ansible.builtin.file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: '0755'
+    path: "/etc/apt/sources.list.d/{{ item }}"
+    state: absent
+  loop:
+    - webots.list
+    - webots.list.save
 
-- name: Descargar la llave GPG de Cyberbotics (Webots)
+- name: Descargar llave GPG de Webots
   ansible.builtin.get_url:
-    url: https://cyberbotics.com/debian/cyberbotics.asc
-    dest: /tmp/cyberbotics.asc
+    url: https://cyberbotics.com/Cyberbotics.asc
+    dest: /etc/apt/keyrings/cyberbotics.asc
     mode: '0644'
 
-- name: Desarmar la llave GPG para APT
+- name: Desarmar llave GPG
   ansible.builtin.shell:
-    cmd: cat /tmp/cyberbotics.asc | gpg --dearmor | tee /etc/apt/keyrings/cyberbotics.gpg > /dev/null
+    cmd: gpg --dearmor < /etc/apt/keyrings/cyberbotics.asc > /etc/apt/keyrings/cyberbotics.gpg
     creates: /etc/apt/keyrings/cyberbotics.gpg
 
-- name: Añadir el repositorio de Webots con formato deb822
-  ansible.builtin.apt_repository:
-    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/cyberbotics.gpg] https://cyberbotics.com/debian binary/"
-    state: present
-    filename: webots
-    update_cache: yes
+- name: Crear repositorio Webots (Nueva Estructura)
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/webots.list
+    content: "deb [arch=amd64 signed-by=/etc/apt/keyrings/cyberbotics.gpg] https://cyberbotics.com/debian/ stable main"
+    mode: '0644'
 
-- name: Instalar Webots y el Bridge de ROS 2
+- name: Actualizar caché e instalar
   ansible.builtin.apt:
     pkg: 
       - webots
       - ros-jazzy-webots-ros2
-    state: present
     update_cache: yes

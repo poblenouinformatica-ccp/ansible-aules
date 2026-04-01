@@ -1,0 +1,19 @@
+- name: Configurar llave GPG de Cyberbotics
+  ansible.builtin.shell:
+    cmd: "wget -qO- https://cyberbotics.com/debian/cyberbotics.asc | gpg --dearmor | tee /etc/apt/keyrings/cyberbotics.gpg > /dev/null"
+  args:
+    creates: /etc/apt/keyrings/cyberbotics.gpg
+
+- name: Añadir repositorio oficial de Webots
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/cyberbotics.gpg] https://cyberbotics.com/debian binary/"
+    state: present
+    filename: webots
+
+- name: Instalar Webots y el Bridge oficial para Jazzy
+  ansible.builtin.apt:
+    pkg: 
+      - webots
+      - ros-jazzy-webots-ros2
+    update_cache: yes
+    state: present
