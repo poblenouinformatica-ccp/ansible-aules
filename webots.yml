@@ -1,31 +1,29 @@
-- name: Limpiar repositorios antiguos de Webots
+---
+- name: Limpiar rastros de repositorios antiguos de Webots (APT)
   ansible.builtin.file:
     path: "/etc/apt/sources.list.d/{{ item }}"
     state: absent
   loop:
     - webots.list
     - webots.list.save
+    - cyberbotics.list
 
-- name: Descargar llave GPG de Webots
-  ansible.builtin.get_url:
-    url: https://cyberbotics.com/Cyberbotics.asc
-    dest: /etc/apt/keyrings/cyberbotics.asc
-    mode: '0644'
+- name: Eliminar llaves GPG antiguas para evitar conflictos
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/apt/keyrings/cyberbotics.asc
+    - /etc/apt/keyrings/cyberbotics.gpg
 
-- name: Desarmar llave GPG
-  ansible.builtin.shell:
-    cmd: gpg --dearmor < /etc/apt/keyrings/cyberbotics.asc > /etc/apt/keyrings/cyberbotics.gpg
-    creates: /etc/apt/keyrings/cyberbotics.gpg
+- name: Instalar Webots vía Snap (Versión recomendada para 24.04)
+  community.general.snap:
+    name: webots
+    state: present
+    classic: yes
 
-- name: Crear repositorio Webots (Nueva Estructura)
-  ansible.builtin.copy:
-    dest: /etc/apt/sources.list.d/webots.list
-    content: "deb [arch=amd64 signed-by=/etc/apt/keyrings/cyberbotics.gpg] https://cyberbotics.com/debian/ stable main"
-    mode: '0644'
-
-- name: Actualizar caché e instalar
+- name: Instalar el bridge de ROS 2 para Webots
   ansible.builtin.apt:
-    pkg: 
-      - webots
-      - ros-jazzy-webots-ros2
+    name: ros-jazzy-webots-ros2
+    state: present
     update_cache: yes
