@@ -1,27 +1,24 @@
 ---
-#Añadimos clausula when para filtrar donde se ejecuta cada task
+# Añadimos clausula when para filtrar donde se ejecuta cada task
 - name: "Configuracion Automatica de Estaciones de Robotica"
   hosts: localhost
   become: true
   tasks:
-  - name: "Instalación de Drivers NVIDIA"
+    - name: "Instalación de Drivers NVIDIA"
       ansible.builtin.include_tasks: nvidia_drivers.yml
       when: 
         - "ansible_facts['pci_devices'] | selectattr('vendor', 'search', 'NVIDIA') | list | length > 0"
-        - "'54003' in inventory_hostname" 
-        - "'katana' in inventory_hostname"
- 
+        - "'54003' in inventory_hostname or 'katana' in inventory_hostname"
+
     - name: "Ejecutando instalacion de ROS 2"
       ansible.builtin.include_tasks: install_ros2_jazzy.yml
       when: 
-        - "'54030' in inventory_hostname
-        - "'katana' in inventory_hostname"
+        - "'54030' in inventory_hostname or 'katana' in inventory_hostname"
 
     - name: "Ejecutando instalacion de Webots"
       ansible.builtin.include_tasks: webots.yml
       when: 
-        - "'54030' in inventory_hostname
-        - "'katana' in inventory_hostname"
+        - "'54030' in inventory_hostname or 'katana' in inventory_hostname"
 
     - name: "Limpieza de paquetes innecesarios"
       ansible.builtin.apt:
