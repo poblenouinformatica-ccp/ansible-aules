@@ -2,26 +2,44 @@
 - name: "Configuracion Automatica de Estaciones de Robotica"
   hosts: localhost
   become: true
-  tasks:
+  gather_facts: yes
 
-    - name: "Detectar hardware NVIDIA"
-      ansible.builtin.shell: lspci | grep -i nvidia
+  tasks:
+    - name: "Capturar hostname del sistema"
+      ansible.builtin.command: hostname
+      register: real_hostname_cmd
+      changed_when: false
+
+    - name: "Set variable de control"
+      ansible.builtin.set_fact:
+        pc_name: "{{ real_hostname_cmd.stdout }}"
+
+    # 1. Chequeo de NVIDIA (sin que rompa el script)
+    - name: "Detectar si hay hardware NVIDIA"
+      ansible.builtin.shell: lspci | grep -iq nvidia
       register: nvidia_check
       failed_when: false
       changed_when: false
 
+    # 2. Tarea de Drivers
     - name: "Instalación de Drivers NVIDIA"
       ansible.builtin.include_tasks: nvidia_drivers.yml
       when: 
         - nvidia_check.rc == 0
-        - "'54003' in inventory_hostname or 'katana' in inventory_hostname"
+        - "'54003' in pc_name or 'katana' in pc_name"
 
+    # 3. Tarea de ROS 2
     - name: "Ejecutando instalacion de ROS 2"
       ansible.builtin.include_tasks: install_ros2_jazzy.yml
       when: 
-        - "'54030' in inventory_hostname or 'katana' in inventory_hostname"
+        - "'54030' in pc_name or 'katana' in pc_name"
 
+    # 4. Tarea de Webots
     - name: "Ejecutando instalacion de Webots"
       ansible.builtin.include_tasks: webots.yml
       when: 
-        - "'54030' in inventory_hostname or 'katana' in inventory_hostname"
+        - "'54030' in pc_name or 'katana' in pc_name"
+
+    - name: "Limpieza"
+      ansible.builtin.apt:
+        autoremove: yes
