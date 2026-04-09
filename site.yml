@@ -5,7 +5,7 @@
   tasks:
 
     - name: "Detectar hardware NVIDIA"
-      ansible.builtin.shell: lspci | grep -iq nvidia
+      ansible.builtin.shell: lspci | grep -i nvidia
       register: nvidia_check
       failed_when: false
       changed_when: false
