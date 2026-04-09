@@ -1,0 +1,44 @@
+---
+# 1. Blacklist de Nouveau
+- name: Blacklist del driver Nouveau
+  ansible.builtin.copy:
+    dest: /etc/modprobe.d/blacklist-nouveau.conf
+    content: |
+      blacklist nouveau
+      options nouveau modeset=0
+    mode: '0644'
+
+- name: Regenerar initramfs (necesario para el blacklist)
+  ansible.builtin.command: update-initramfs -u
+  changed_when: true
+
+# 2. Preparación de Repositorios
+- name: Añadir repositorio de drivers propietarios (PPA)
+  ansible.builtin.apt_repository:
+    repo: ppa:graphics-drivers/ppa
+    state: present
+
+# 3. Instalación del Driver
+- name: Instalar NVIDIA Driver versión 550 y dependencias
+  ansible.builtin.apt:
+    pkg:
+      - nvidia-driver-580
+      - nvidia-settings
+      - nvidia-utils-580
+      - libnvidia-common-580
+    update_cache: yes
+    state: present
+  register: nvidia_install
+
+# 4. Configuración final
+# La persistencia hace que el driver no se descargue de memoria si no hay ninguna aplicacion usándolo
+# Puede prevenir timeouts en webots o ros
+- name: Aplicar persistencia de NVIDIA (optimización para cómputo/robots)
+  ansible.builtin.command: nvidia-smi -pm 1
+  when: nvidia_install.changed
+  ignore_errors: yes
+
+- name: Recordatorio de reinicio
+  ansible.builtin.debug:
+    msg: "ATENCIÓN: Se ha instalado un nuevo driver de NVIDIA. La máquina requiere un reinicio para cargarlo."
+  when: nvidia_install.changed
