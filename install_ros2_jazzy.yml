@@ -15,19 +15,29 @@
   register: apt_base
   until: apt_base is success
   retries: 5
-  delay: 5
+  delay: 10
 
 - name: Descargar llave GPG de ROS 2
   ansible.builtin.get_url:
     url: https://raw.githubusercontent.com/ros/rosdistro/master/ros.key
     dest: /usr/share/keyrings/ros-archive-keyring.gpg
     mode: '0644'
+    timeout: 30           # Aumentado para evitar el timeout de 10s
+  register: gpg_key
+  until: gpg_key is success
+  retries: 5              # 5 intentos en caso de micro-cortes de red
+  delay: 10
 
 - name: Añadir repositorio oficial de ROS 2 Jazzy
   ansible.builtin.apt_repository:
     repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu noble main"
     state: present
     filename: ros2
+    update_cache: yes
+  register: repo_ros
+  until: repo_ros is success
+  retries: 3
+  delay: 10
 
 - name: Instalar ROS 2 Jazzy, herramientas y rosdep
   ansible.builtin.apt:
@@ -37,15 +47,15 @@
       - python3-rosdep
       - ros-jazzy-rmw-cyclonedds-cpp
     state: present
-    update_cache: yes
+    update_cache: no      # Ya lo hizo la tarea anterior
   register: apt_ros
   until: apt_ros is success
   retries: 5
-  delay: 10
+  delay: 15               # Más tiempo entre reintentos para paquetes pesados
 
 # --- CONFIGURACIÓN PARA USUARIOS DINÁMICOS ---
 
-- name: Configurar carga de ROS 2 para TODOS los usuarios (presentes y futuros)
+- name: Configurar carga de ROS 2 para TODOS los usuarios (Global Profile)
   ansible.builtin.copy:
     dest: /etc/profile.d/ros2_setup.sh
     mode: '0644'
