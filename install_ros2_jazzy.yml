@@ -1,11 +1,12 @@
-- name: Asegurar locales UTF-8
+---
+- name: Asegurar locales UTF-8 (Requisito de ROS 2)
   ansible.builtin.locale_gen:
     name: en_US.UTF-8
     state: present
 
-- name: Instalar dependencias de red y GPG
+- name: Instalar dependencias iniciales de red y GPG
   ansible.builtin.apt:
-    pkg: [software-properties-common, curl, gnupg, git]
+    pkg: [software-properties-common, curl, gnupg, git, python3-rosdep]
     update_cache: yes
 
 - name: Descargar llave GPG de ROS 2
@@ -14,21 +15,40 @@
     dest: /usr/share/keyrings/ros-archive-keyring.gpg
     mode: '0644'
 
-- name: Añadir repositorio ROS 2 Jazzy
+- name: Añadir repositorio ROS 2 Jazzy (Noble)
   ansible.builtin.apt_repository:
     repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu noble main"
     state: present
     filename: ros2
 
-- name: Instalar ROS 2 Jazzy Desktop y herramientas
+- name: Instalar ROS 2 Jazzy Desktop y herramientas de desarrollo
   ansible.builtin.apt:
-    pkg: [ros-jazzy-desktop, ros-dev-tools]
-    update_cache: yes
+    pkg: 
+      - ros-jazzy-desktop
+      - ros-dev-tools
     state: present
+    # No hace falta update_cache aquí porque apt_repository ya lo hace
 
-- name: Configurar source en .bashrc para todos los usuarios reales
-  ansible.builtin.lineinfile:
-    path: "/home/{{ item }}/.bashrc"
-    line: "source /opt/ros/jazzy/setup.bash"
-    create: yes
-  loop: "{{ query('lines', 'ls /home') }}"
+# --- CONFIGURACIÓN PARA USUARIOS DINÁMICOS ---
+
+- name: Configurar carga de ROS 2 para TODOS los usuarios (presentes y futuros)
+  ansible.builtin.copy:
+    dest: /etc/profile.d/ros2_setup.sh
+    mode: '0644'
+    content: |
+      # Este script carga el entorno de ROS 2 Jazzy automáticamente al iniciar sesión
+      if [ -f /opt/ros/jazzy/setup.bash ]; then
+        source /opt/ros/jazzy/setup.bash
+      fi
+      # Exportar el RMW por defecto para estabilidad en red de aula
+      export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+
+- name: Inicializar rosdep (Gestor de dependencias)
+  ansible.builtin.command: rosdep init
+  args:
+    creates: /etc/ros/rosdep/sources.list.d/20-default.list
+  ignore_errors: yes
+
+- name: Actualizar caché global de rosdep
+  ansible.builtin.command: rosdep update
+  changed_when: false
