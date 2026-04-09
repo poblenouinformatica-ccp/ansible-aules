@@ -4,29 +4,18 @@
     name: en_US.UTF-8
     state: present
 
-- name: Activar el repositorio Universe
-  ansible.builtin.apt_repository:
-    repo: "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} universe"
-    state: present
-
-- name: Forzar refresco de caché de APT
-  ansible.builtin.apt:
-    update_cache: yes
-  register: apt_res
-  until: apt_res is success
-  retries: 5
-  delay: 5
-
-- name: Instalar dependencias iniciales de red y GPG
+- name: Instalar herramientas base iniciales
   ansible.builtin.apt:
     pkg: 
       - software-properties-common
       - curl
       - gnupg
       - git
-      - python3-rosdep
-    state: present
-    update_cache: no
+    update_cache: yes
+  register: apt_base
+  until: apt_base is success
+  retries: 5
+  delay: 5
 
 - name: Descargar llave GPG de ROS 2
   ansible.builtin.get_url:
@@ -34,18 +23,25 @@
     dest: /usr/share/keyrings/ros-archive-keyring.gpg
     mode: '0644'
 
-- name: Añadir repositorio ROS 2 Jazzy (Noble)
+- name: Añadir repositorio oficial de ROS 2 Jazzy
   ansible.builtin.apt_repository:
     repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu noble main"
     state: present
     filename: ros2
 
-- name: Instalar ROS 2 Jazzy Desktop y herramientas de desarrollo
+- name: Instalar ROS 2 Jazzy, herramientas y rosdep
   ansible.builtin.apt:
     pkg: 
       - ros-jazzy-desktop
       - ros-dev-tools
+      - python3-rosdep
+      - ros-jazzy-rmw-cyclonedds-cpp
     state: present
+    update_cache: yes
+  register: apt_ros
+  until: apt_ros is success
+  retries: 5
+  delay: 10
 
 # --- CONFIGURACIÓN PARA USUARIOS DINÁMICOS ---
 
@@ -58,7 +54,7 @@
       if [ -f /opt/ros/jazzy/setup.bash ]; then
         source /opt/ros/jazzy/setup.bash
       fi
-      # Exportar el RMW por defecto para estabilidad en red de aula
+      # Forzar el uso de CycloneDDS para evitar problemas de red en el aula
       export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
 - name: Inicializar rosdep (Gestor de dependencias)
