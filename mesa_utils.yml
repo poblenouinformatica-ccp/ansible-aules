@@ -1,0 +1,23 @@
+---
+- name: Instalar herramientas de verificación gráfica (Mesa y Vulkan)
+  ansible.builtin.apt:
+    pkg:
+      - mesa-utils
+      - vulkan-tools
+    state: present
+    update_cache: yes
+  register: mesa_install
+  until: mesa_install is success
+  retries: 3
+  delay: 10
+
+- name: Verificar soporte GLX (Información en el log)
+  ansible.builtin.shell: "glxinfo | grep -E 'direct rendering|OpenGL vendor|display'"
+  register: glx_info
+  changed_when: false
+  failed_when: false
+
+- name: Mostrar estado de la aceleración gráfica
+  ansible.builtin.debug:
+    var: glx_info.stdout_lines
+  when: glx_info.rc == 0

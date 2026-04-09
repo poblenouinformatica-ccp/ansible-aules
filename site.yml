@@ -1,20 +1,25 @@
 ---
-- name: "Configuracion Automatica de Estaciones de Robotica"
+- name: "Configuracion Automatica de Estaciones de trabajo"
   hosts: localhost
   become: true
   gather_facts: yes
 
   tasks:
+    # Lo primero es sacar el nombre del host. Usaremos la variable del nombre del host para discriminar
+    # donde queremos aplicar las recipes, con el condicional when
     - name: "Capturar hostname del sistema"
       ansible.builtin.command: hostname
       register: real_hostname_cmd
       changed_when: false
 
+    # seteamos la variable de control pc_name a la salida de real_hostname_cmd
     - name: "Set variable de control"
       ansible.builtin.set_fact:
         pc_name: "{{ real_hostname_cmd.stdout }}"
 
     # 1. Chequeo de NVIDIA (sin que rompa el script)
+    # Es lo logico: si lspci -v no devuelve ningun string Nvidia no tiene sentido
+    # bajarle los drivers. Lo almacenamos en una variable de control.
     - name: "Detectar si hay hardware NVIDIA"
       ansible.builtin.shell: lspci | grep -iq nvidia
       register: nvidia_check
@@ -22,11 +27,20 @@
       changed_when: false
 
     # 2. Tarea de Drivers
+    # Solo lo aplicaremos si se dan dos condiciones: si la maquina tiene Nvidia y si se cumple el hostname.
     - name: "Instalación de Drivers NVIDIA"
       ansible.builtin.include_tasks: nvidia_drivers.yml
       when: 
         - nvidia_check.rc == 0
         - "'54003' in pc_name or 'katana' in pc_name"
+        
+    # 2bis: instalacion mesa-utils
+    # herramientas para comprobar estado de acelaracion grafica
+    # El yml correrá para todas las maquinas, las mesa-utils son muy ligeras
+    # e independientes de la aceleracion.
+    - name: "Instalación de utilidades de diagnóstico gráfico"
+      ansible.builtin.include_tasks: mesa_utils.yml
+    
 
     # 3. Tarea de ROS 2
     - name: "Ejecutando instalacion de ROS 2"
