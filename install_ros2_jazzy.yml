@@ -3,8 +3,7 @@
   ansible.builtin.locale_gen:
     name: en_US.UTF-8
     state: present
-    
-#Activo repo Universe
+
 - name: Activar el repositorio Universe
   ansible.builtin.apt_repository:
     repo: "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} universe"
@@ -13,14 +12,13 @@
 - name: Forzar refresco de caché de APT
   ansible.builtin.apt:
     update_cache: yes
-  # Añadimos un pequeño reintento por si appstreamcli tiene bloqueado el lock
   register: apt_res
   until: apt_res is success
   retries: 5
   delay: 5
-  
+
 - name: Instalar dependencias iniciales de red y GPG
-    ansible.builtin.apt:
+  ansible.builtin.apt:
     pkg: 
       - software-properties-common
       - curl
@@ -28,8 +26,8 @@
       - git
       - python3-rosdep
     state: present
-    update_cache: no # Ya lo hicimos arriba
-    
+    update_cache: no
+
 - name: Descargar llave GPG de ROS 2
   ansible.builtin.get_url:
     url: https://raw.githubusercontent.com/ros/rosdistro/master/ros.key
@@ -48,7 +46,6 @@
       - ros-jazzy-desktop
       - ros-dev-tools
     state: present
-    # No hace falta update_cache aquí porque apt_repository ya lo hace
 
 # --- CONFIGURACIÓN PARA USUARIOS DINÁMICOS ---
 
