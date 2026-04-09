@@ -18,18 +18,18 @@
   until: apt_res is success
   retries: 5
   delay: 5
-
+  
 - name: Instalar dependencias iniciales de red y GPG
-  ansible.builtin.apt:
-   pkg: 
+    ansible.builtin.apt:
+    pkg: 
       - software-properties-common
       - curl
       - gnupg
       - git
       - python3-rosdep
     state: present
-    update_cache: no
-
+    update_cache: no # Ya lo hicimos arriba
+    
 - name: Descargar llave GPG de ROS 2
   ansible.builtin.get_url:
     url: https://raw.githubusercontent.com/ros/rosdistro/master/ros.key
