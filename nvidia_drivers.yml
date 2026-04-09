@@ -1,5 +1,6 @@
 ---
 # 1. Blacklist de Nouveau
+# Deshabilita de forma permanente el driver alternativo
 - name: Blacklist del driver Nouveau
   ansible.builtin.copy:
     dest: /etc/modprobe.d/blacklist-nouveau.conf
@@ -8,6 +9,7 @@
       options nouveau modeset=0
     mode: '0644'
 
+# Regenera initramfs
 - name: Regenerar initramfs (necesario para el blacklist)
   ansible.builtin.command: update-initramfs -u
   changed_when: true
