@@ -3,6 +3,12 @@
   ansible.builtin.locale_gen:
     name: en_US.UTF-8
     state: present
+    
+#Activo repo Universe
+- name: Activar el repositorio Universe
+  ansible.builtin.apt_repository:
+    repo: "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} universe"
+    state: present
 
 - name: Instalar dependencias iniciales de red y GPG
   ansible.builtin.apt:
