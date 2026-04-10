@@ -46,6 +46,7 @@
       - ros-dev-tools
       - python3-rosdep
       - ros-jazzy-rmw-cyclonedds-cpp
+      - ros-jazzy-webots-ros2
     state: present
     update_cache: no      # Ya lo hizo la tarea anterior
   register: apt_ros
