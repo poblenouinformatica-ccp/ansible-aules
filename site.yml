@@ -32,7 +32,7 @@
       ansible.builtin.include_tasks: nvidia_drivers.yml
       when: 
         - nvidia_check.rc == 0
-        - "'54003' in pc_name or 'katana' in pc_name"
+        - "'54030' in pc_name or 'katana' in pc_name"
         
     # 2bis: instalacion mesa-utils
     # herramientas para comprobar estado de acelaracion grafica
